@@ -1,0 +1,151 @@
+---
+title: "RMarkdown Interactive Webpage Example"
+output:
+    html_document:
+        theme: cosmo
+        code_folding: hide
+        toc: true
+        toc_depth: 2
+        toc_float: true
+        includes:
+         in_header: "html/header.html"
+
+---
+
+
+<style>
+h1.title {
+ margin-top: 50px;
+}
+
+div#TOC {
+margin-top: 20px;
+}
+</style>
+
+
+```{r, include=F}
+library(kableExtra)
+library(plotly)
+library(ggplot2)
+library(dplyr)
+library(knitr)
+```
+
+<br>
+
+This page demonstates some nice functionality built both within and outside of R to generate multi-faceted, rich reports. The following is a **synthetic** report about Firefox add-ons, which is my focus as a member of Mozilla's product data science team. 
+
+---
+
+## Tables
+
+Do you even need a plot? Sometimes the answer is no, and if you can load a `csv` or the like into R you can render a nice html table using the `kableExtra` + `knitr` packages. 
+
+
+```{r}
+# make some fake data
+fakeAggregates <- data.frame(
+  addons=c(24.5, 3.4),
+  no.addons=c(20.1, 2.3)
+)
+colnames(fakeAggregates) <- c("Addons", "No Addons")
+rownames(fakeAggregates) <- c("Mean Session Length", "Mean Number of Sessions")
+
+# render html table
+fakeAggregates %>%
+kable("html", escape=F) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width=F, font_size=25)
+```
+
+---
+
+## Static Plots
+
+Before getting all fancy, I evaluate the `ggplot2` package to see if a simple, static plot will convey the information I want (usually it can!). This package has **tons** of customization options should you spend the time to read its [docs](http://ggplot2.tidyverse.org/reference/) :). Below is some more fake data from a hypothetical experiment. 
+
+
+
+```{r, fig.height=5, fig.width=7, echo=T, warning=F, message=F}
+generateFakeDataHist <- function(n) {
+  histData <- data.frame(
+    bucket=rep(1:n, 2),
+    freq=100/(exp(rep(1:n, 2))+ (runif(1:(n*2)))),
+    group=c(rep('Treatment', n), rep('Control', n))
+  )
+  histData
+}
+
+# how many buckets for the histogram?
+N <- 5
+
+# get some fake data
+histData <- generateFakeDataHist(N)
+
+# build the plot
+p <- ggplot(histData) +
+  geom_col(aes(x=bucket, y=freq, fill=group), alpha=.6, position="dodge") +
+  theme(axis.line = element_line(colour = "#B3B2B2"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank(),
+        legend.position = "top",
+        legend.title = element_blank(),
+        text = element_text(family='sans')) + 
+  labs(x="X", y="Percentage of Users (%)", title="Percentage of Users with X Add-ons for Treatment/Control") +
+  scale_x_continuous(breaks=1:N) +
+  scale_fill_manual("legend", values = c("Treatment" = "#05b378", "Control" = "#acabab"))
+
+# add some text annotations
+p + geom_text(data=histData, aes(x=bucket, y=freq, group=group,
+                label=paste(round(freq, 2), "%", sep='')), 
+            position=position_dodge(.9), vjust=-.25, size=2.5,)
+```
+
+--- 
+
+## Embedded HTML
+
+Okay, so a table and a static plot aren't doing the trick? We can develop plots using, say, [`D3.js`](https://d3js.org/) outside of rmarkdown, and then link them into the resulting webpage. The following examples are generated with the [`metricsgraphics.js`](https://www.metricsgraphicsjs.org/) package, which is a wrapper for D3 that focuses on time series visualization. 
+
+The plots below show fake data for 3 of Firefox's channels. The plots are "linked", so when a user hovers over the plot area, the legend on each plot displays the numbers used to calculate the percentages shown:  $$ \frac{Users\ with\ Addons}{Total\ Users} $$
+
+This is useful for reporting metrics over time, without crowding the plot with a bunch of text annotations.
+
+<br>
+<br>
+
+
+```{r, echo=T, warning=F}
+htmltools::includeHTML('./html/mg-charts.html')
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
